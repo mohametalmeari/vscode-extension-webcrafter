@@ -18,10 +18,55 @@ function activate(context) {
   // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
     "web-crafter-test.test-command",
-    function () {
+    async function () {
       // The code you place here will be executed every time your command is executed
 
-      console.log("Test Command");
+      const options = [
+        {
+          label: "Option 1",
+          description: "Option 1 Description",
+          detail: "Option 1 Detail",
+          more: "Option 1 More",
+          fun: () => {
+            console.log("Hello from inside option 1");
+          },
+          options: [
+            {
+              label: "Option 1.1",
+              description: "Option 1.1 Description",
+            },
+          ],
+        },
+        {
+          label: "Option 2",
+          description: "Option 2 Description",
+          detail: "Option 2 Detail",
+          more: "Option 2 More",
+          fun: () => {
+            console.log("Hello from inside option 2");
+          },
+        },
+      ];
+      const option = await vscode.window.showQuickPick(options, {
+        matchOnDetail: true,
+        placeHolder: "Select an option to continue...",
+      });
+
+      if (!option) return;
+
+      console.log(option);
+      option.fun();
+
+      // If the option has sub options
+      if (option.options) {
+        const subOption = await vscode.window.showQuickPick(option.options, {
+          matchOnDetail: true,
+          placeHolder: "Select an option to continue...",
+        });
+        if (!subOption) return;
+        console.log(subOption);
+      }
+
       // Display a message box to the user
       vscode.window.showInformationMessage(
         "Hello World from Web Crafter Test!"
