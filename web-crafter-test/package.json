@@ -20,6 +20,10 @@
       {
         "command": "web-crafter-test.new-command",
         "title": "Another Test Command"
+      },
+      {
+        "command": "extension.copyFileContentByTyping",
+        "title": "Copy File Content By Typing"
       }
     ]
   },

@@ -1,93 +1,161 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
+const fs = require("fs");
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log("Test");
-
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with  registerCommand
-  // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
-    "web-crafter-test.test-command",
-    async function () {
-      // The code you place here will be executed every time your command is executed
+    "extension.copyFileContentByTyping",
+    async () => {
+      // Read the content of the source file
+      fs.readFile("./auto-type/index.txt", "utf8", async (err, data) => {
+        if (err) {
+          vscode.window.showErrorMessage(`Could not read file: ${err.message}`);
+          return;
+        }
 
-      const options = [
-        {
-          label: "Option 1",
-          description: "Option 1 Description",
-          detail: "Option 1 Detail",
-          more: "Option 1 More",
-          fun: () => {
-            console.log("Hello from inside option 1");
-          },
-          options: [
-            {
-              label: "Option 1.1",
-              description: "Option 1.1 Description",
-            },
-          ],
-        },
-        {
-          label: "Option 2",
-          description: "Option 2 Description",
-          detail: "Option 2 Detail",
-          more: "Option 2 More",
-          fun: () => {
-            console.log("Hello from inside option 2");
-          },
-        },
-      ];
-      const option = await vscode.window.showQuickPick(options, {
-        matchOnDetail: true,
-        placeHolder: "Select an option to continue...",
+        // Open the target file in the editor
+        const document = await vscode.workspace.openTextDocument(
+          vscode.window.activeTextEditor.document.uri.fsPath
+        );
+        const editor = await vscode.window.showTextDocument(document);
+
+        let openDoubleQuote = false;
+        let openSingleQuote = false;
+
+        const startPoint = data.indexOf("⇘") + 1;
+        let endPoint = data.indexOf("⇖");
+        if (endPoint === -1) endPoint = data.length;
+
+        // Type out the content
+        for (let i = startPoint; i < endPoint; i++) {
+          const position = editor.selection.active;
+          const newPosition = position.translate(0, 1);
+
+          switch (data[i]) {
+            // Prevent extra line breaks
+            case "\r":
+              continue;
+
+            case "~":
+              // Copy and paste the text between ~ and ^
+              const copyText = data.slice(i + 1, data.indexOf("^", i));
+              await vscode.env.clipboard.writeText(copyText);
+              await vscode.commands.executeCommand(
+                "editor.action.clipboardPasteAction"
+              );
+              i = data.indexOf("^", i);
+              continue;
+
+            case " ":
+              if (data[i + 1] === " ") {
+                let j = i + 2;
+                let spaces = "  ";
+                while (data[j] === " " && j < data.length) {
+                  j++;
+                  spaces += " ";
+                }
+                await editor.edit((editBuilder) => {
+                  editBuilder.insert(position, spaces);
+                });
+                i = j - 1;
+                continue;
+              }
+              break;
+
+            case '"':
+              openDoubleQuote = !openDoubleQuote;
+              if (openDoubleQuote) {
+                await editor.edit((editBuilder) => {
+                  editBuilder.insert(position, '""');
+                });
+              }
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            case "'":
+              openSingleQuote = !openSingleQuote;
+              if (openSingleQuote) {
+                await editor.edit((editBuilder) => {
+                  editBuilder.insert(position, "''");
+                });
+              }
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            case "{":
+              await editor.edit((editBuilder) => {
+                editBuilder.insert(position, "{}");
+              });
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            case "(":
+              await editor.edit((editBuilder) => {
+                editBuilder.insert(position, "()");
+              });
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            case "[":
+              await editor.edit((editBuilder) => {
+                editBuilder.insert(position, "[]");
+              });
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            case "<":
+              await editor.edit((editBuilder) => {
+                editBuilder.insert(position, "<>");
+              });
+              editor.selection = new vscode.Selection(newPosition, newPosition);
+              continue;
+
+            default:
+              if (["}", ")", "]", ">"].includes(data[i])) {
+                editor.selection = new vscode.Selection(
+                  newPosition,
+                  newPosition
+                );
+                await new Promise((resolve) =>
+                  setTimeout(resolve, Math.random() * 200 + 100)
+                );
+                continue;
+              }
+              break;
+          }
+
+          if (data[i] !== " " && data[i - 1] === " " && data[i - 2] === " ") {
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 100 + 300)
+            );
+          }
+
+          await editor.edit((editBuilder) => {
+            editBuilder.insert(position, data[i]);
+          });
+
+          // Small delay to simulate typing
+          if (
+            (data[i] !== "\n" || data[i + 1] !== " ") &&
+            data[i] !== '"' &&
+            data[i] !== "'" &&
+            data[i] !== "=" &&
+            data[i] !== "/" &&
+            data[i] !== ">"
+          ) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 200 + 100)
+            );
+          }
+        }
+
+        // vscode.window.showInformationMessage("Done Typing");
       });
-
-      if (!option) return;
-
-      console.log(option);
-      option.fun();
-
-      // If the option has sub options
-      if (option.options) {
-        const subOption = await vscode.window.showQuickPick(option.options, {
-          matchOnDetail: true,
-          placeHolder: "Select an option to continue...",
-        });
-        if (!subOption) return;
-        console.log(subOption);
-      }
-
-      // Display a message box to the user
-      vscode.window.showInformationMessage(
-        "Hello World from Web Crafter Test!"
-      );
     }
   );
 
   context.subscriptions.push(disposable);
-
-  // Add a new command
-  let newCommand = vscode.commands.registerCommand(
-    "web-crafter-test.new-command",
-    function () {
-      console.log("New Command is called");
-      vscode.window.showInformationMessage("New Command");
-    }
-  );
-  context.subscriptions.push(newCommand);
 }
 
-// This method is called when your extension is deactivated
 function deactivate() {}
 
 module.exports = {
