@@ -1,6 +1,7 @@
 {
   "name": "web-crafter-test",
   "displayName": "Web Crafter Test",
+  "publisher": "WebCrafter",
   "description": "This is a VSCode extension test",
   "version": "0.0.1",
   "engines": {
